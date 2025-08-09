@@ -1,0 +1,108 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+
+        {
+            "name": "Falcon Toolset - Convert Coordinates",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["convert", "1418591.342", "736355.506", "--theater", "korea", "--elevation", "--dms"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - Convert with Custom Coordinates",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["convert", "1000000", "1000000", "--theater", "korea", "--unit", "feet"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - Reverse Convert (Lat/Lon to Game)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["convert", "37.5", "127.0", "--reverse", "--unit", "meters", "--theater", "korea"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - Show Map Corners",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["corners", "--theater", "korea"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - List Theaters",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["theaters"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Korea (Debug)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["korea", "--debug", "--output", "korea_debug.xml"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Balkans",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["balkans", "--output", "balkans_airbases.xml"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Debug Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Debug with Custom Args (Input Required)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        }
+    ]
+}
