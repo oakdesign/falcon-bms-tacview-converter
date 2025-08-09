@@ -19,25 +19,25 @@ from utils.coordinate_converter import CoordinateConverter
 from utils.file_parser import parse_stations_file, get_all_airbase_data
 
 def generate_tacview_xml(airbases, converter, debug=False):
-    """Generate Tacview-compatible XML from airbase data."""
+    """Generate XML from airbase data matching the original format."""
     
-    # Create root element with Tacview namespace
-    root = ET.Element('Document', attrib={
-        'xmlns': 'http://www.tacview.net/xml/0.1',
-        'CreatedBy': 'Falcon BMS Tacview Converter',
-        'Version': '1.0'
-    })
+    def to_dms(deg):
+        """Convert decimal degrees to degrees and decimal minutes format."""
+        d = int(deg)
+        m = abs((deg - d) * 60)
+        return f"{d}° {m:.4f}'"
     
-    # Add metadata
-    metadata = ET.SubElement(root, 'Metadata')
-    ET.SubElement(metadata, 'Title').text = 'Falcon BMS Airbases'
-    ET.SubElement(metadata, 'Description').text = 'Airbase and runway data extracted from Falcon BMS'
-    ET.SubElement(metadata, 'Author').text = 'Falcon BMS Tacview Converter'
+    def clean_shortname(name):
+        """Extract short name from full name."""
+        remove_terms = ["Airbase", "Airstrip", "Airport", "Highway Strip", "Highwaystrip", "Hiwaystrip"]
+        shortname = name
+        for term in remove_terms:
+            shortname = shortname.replace(term, "")
+        return shortname.strip()
     
-    # Create objects container
-    objects = ET.SubElement(root, 'Objects')
+    # Create root element - simple Objects container like original
+    root = ET.Element('Objects')
     
-    object_id = 1
     processed_count = 0
     
     for airbase in airbases:
@@ -50,35 +50,49 @@ def generate_tacview_xml(airbases, converter, debug=False):
             if elevation < -900:  # Error code
                 elevation = 0
             
+            # Determine ID format
+            if airbase['icao'].startswith('AB'):
+                obj_id = f"CampId:{airbase['id']}"
+            else:
+                obj_id = f"ICAO:{airbase['icao']}"
+            
             # Create airbase object
-            obj = ET.SubElement(objects, 'Object', attrib={'ID': str(object_id)})
+            obj = ET.SubElement(root, 'Object', attrib={'ID': obj_id})
             
             # Add object properties
-            ET.SubElement(obj, 'Name').text = f"{airbase['icao']} - {airbase['name']}"
             ET.SubElement(obj, 'Type').text = 'Airport'
             
-            # Add position
+            # Add name - either with or without ICAO code
+            if airbase['icao'].startswith('AB'):
+                ET.SubElement(obj, 'Name').text = airbase['name']
+            else:
+                # Only add ICAO if it's not already in the name
+                if airbase['icao'] in airbase['name']:
+                    ET.SubElement(obj, 'Name').text = airbase['name']
+                else:
+                    ET.SubElement(obj, 'Name').text = f"{airbase['name']} ({airbase['icao']})"
+            
+            # Add short name
+            short_name = clean_shortname(airbase['name'])
+            if airbase['icao'].startswith('AB'):
+                ET.SubElement(obj, 'ShortName').text = short_name
+            else:
+                ET.SubElement(obj, 'ShortName').text = airbase['icao']
+            
+            # Add position in DMS format
             position = ET.SubElement(obj, 'Position')
-            ET.SubElement(position, 'Latitude').text = f"{lat:.8f}"
-            ET.SubElement(position, 'Longitude').text = f"{lon:.8f}"
-            ET.SubElement(position, 'Altitude').text = f"{elevation:.2f}"
+            ET.SubElement(position, 'Latitude').text = to_dms(lat)
+            ET.SubElement(position, 'Longitude').text = to_dms(lon)
+            ET.SubElement(position, 'Altitude').text = f"{elevation * 0.3048:.1f}"
             
-            # Add additional properties
-            properties = ET.SubElement(obj, 'Properties')
-            ET.SubElement(properties, 'Property', attrib={'Name': 'ICAO', 'Value': airbase['icao']})
-            ET.SubElement(properties, 'Property', attrib={'Name': 'AirbaseName', 'Value': airbase['name']})
-            ET.SubElement(properties, 'Property', attrib={'Name': 'GameID', 'Value': str(airbase['id'])})
-            ET.SubElement(properties, 'Property', attrib={'Name': 'GameCoords', 'Value': f"{airbase['x']:.0f},{airbase['y']:.0f}"})
-            
-            object_id += 1
             processed_count += 1
             
             if debug:
                 print(f"  ✓ {airbase['icao']} - {airbase['name']} at {lat:.6f}, {lon:.6f}")
             
-            # Add runways if available
+            # Add runways as separate objects (like original format)
             for runway in airbase.get('runways', []):
-                # Calculate runway endpoints
+                # Calculate runway position (airbase position + runway offset)
                 runway_lat, runway_lon = converter.game_to_latlon(
                     airbase['x'] + runway['x'], 
                     airbase['y'] + runway['y'], 
@@ -92,27 +106,28 @@ def generate_tacview_xml(airbases, converter, debug=False):
                 if runway_elevation < -900:
                     runway_elevation = elevation
                 
-                # Create runway object
-                runway_obj = ET.SubElement(objects, 'Object', attrib={'ID': str(object_id)})
-                ET.SubElement(runway_obj, 'Name').text = f"Runway {runway['id']} at {airbase['icao']}"
-                ET.SubElement(runway_obj, 'Type').text = 'GroundUnit'
-                ET.SubElement(runway_obj, 'Color').text = '#0066CC'  # Blue color for runways
+                # Create runway object (no ID attribute like in original)
+                runway_obj = ET.SubElement(root, 'Object')
                 
-                # Runway position
+                # Runway position in DMS format
                 runway_pos = ET.SubElement(runway_obj, 'Position')
-                ET.SubElement(runway_pos, 'Latitude').text = f"{runway_lat:.8f}"
-                ET.SubElement(runway_pos, 'Longitude').text = f"{runway_lon:.8f}"
-                ET.SubElement(runway_pos, 'Altitude').text = f"{runway_elevation:.2f}"
+                ET.SubElement(runway_pos, 'Latitude').text = to_dms(runway_lat)
+                ET.SubElement(runway_pos, 'Longitude').text = to_dms(runway_lon)
+                ET.SubElement(runway_pos, 'Altitude').text = f"{runway_elevation * 0.3048:.1f}"
                 
-                # Runway properties
-                runway_props = ET.SubElement(runway_obj, 'Properties')
-                ET.SubElement(runway_props, 'Property', attrib={'Name': 'RunwayID', 'Value': runway['id']})
-                ET.SubElement(runway_props, 'Property', attrib={'Name': 'Length', 'Value': f"{runway['length']:.0f}"})
-                ET.SubElement(runway_props, 'Property', attrib={'Name': 'Width', 'Value': f"{runway['width']:.0f}"})
-                ET.SubElement(runway_props, 'Property', attrib={'Name': 'Heading', 'Value': f"{runway['heading']:.1f}"})
-                ET.SubElement(runway_props, 'Property', attrib={'Name': 'ParentAirbase', 'Value': airbase['icao']})
+                # Runway shape and appearance (matching original format)
+                ET.SubElement(runway_obj, 'Shape').text = 'Cube'
+                ET.SubElement(runway_obj, 'Color').text = '#2d94ff'
                 
-                object_id += 1
+                # Runway size
+                size = ET.SubElement(runway_obj, 'Size')
+                ET.SubElement(size, 'Width').text = f"{int(runway['width'] * 0.3048)}"
+                ET.SubElement(size, 'Length').text = f"{int(runway['length'] * 0.3048)}"
+                ET.SubElement(size, 'Height').text = "2"
+                
+                # Runway orientation
+                orientation = ET.SubElement(runway_obj, 'Orientation')
+                ET.SubElement(orientation, 'Yaw').text = f"{runway['heading']:.1f}"
                 
                 if debug:
                     print(f"    ➤ Runway {runway['id']}: {runway['length']:.0f}ft x {runway['width']:.0f}ft, HDG {runway['heading']:.1f}°")
@@ -123,11 +138,13 @@ def generate_tacview_xml(airbases, converter, debug=False):
                 import traceback
                 traceback.print_exc()
     
-    print(f"Processed {processed_count} airbases with {object_id - processed_count - 1} runways")
+    print(f"Processed {processed_count} airbases with {len(root) - processed_count} runways")
     return root
 
 def main():
     """Main entry point."""
+    print("Entering main() function...")
+    
     parser = argparse.ArgumentParser(
         description='Generate Tacview XML from Falcon BMS airbase data',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -155,19 +172,33 @@ Examples:
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug output')
     
+    print("Parsing arguments...")
     args = parser.parse_args()
+    print(f"Parsed arguments: {args}")
     
     theater_name = args.theater
     output_file = args.output or f"{theater_name}_airbases_tacview.xml"
     
+    print(f"Theater: {theater_name}, Output file: {output_file}")
+    
     # Validate theater
+    print(f"Available theater configs: {list(THEATER_CONFIGS.keys())}")
     if theater_name not in THEATER_CONFIGS:
         print(f"Error: Unknown theater '{theater_name}'")
         print(f"Available theaters: {', '.join(THEATER_CONFIGS.keys())}")
         return 1
     
     # Check if theater is available
-    available_theaters = get_available_theaters()
+    print("Checking available theaters...")
+    try:
+        available_theaters = get_available_theaters()
+        print(f"Available theaters found: {available_theaters}")
+    except Exception as e:
+        print(f"Error checking available theaters: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+        
     if theater_name not in available_theaters:
         print(f"Error: Theater '{theater_name}' not found in Falcon BMS installation")
         print(f"Available theaters: {', '.join(available_theaters)}")
@@ -205,16 +236,51 @@ Examples:
         print("Generating Tacview XML...")
         xml_root = generate_tacview_xml(airbases, converter, args.debug)
         
-        # Pretty print and save
-        rough_string = ET.tostring(xml_root, encoding='unicode')
-        reparsed = minidom.parseString(rough_string)
-        pretty_xml = reparsed.toprettyxml(indent="  ")
+        # Generate XML manually to match original format exactly
+        xml_lines = ["<?xml version='1.0' encoding='utf-8'?>", '<Objects>']
         
-        # Remove extra blank lines
-        lines = [line for line in pretty_xml.split('\n') if line.strip()]
-        final_xml = '\n'.join(lines)
+        def add_element(lines, name, text=None, attribs=None, indent=1):
+            """Add an XML element with proper indentation."""
+            spaces = "  " * indent
+            if attribs:
+                attr_str = ' '.join(f'{k}="{v}"' for k, v in attribs.items())
+                if text:
+                    lines.append(f'{spaces}<{name} {attr_str}>{text}</{name}>')
+                else:
+                    lines.append(f'{spaces}<{name} {attr_str}>')
+            else:
+                if text:
+                    lines.append(f'{spaces}<{name}>{text}</{name}>')
+                else:
+                    lines.append(f'{spaces}<{name}>')
         
-        with open(output_file, 'w', encoding='utf-8') as f:
+        def close_element(lines, name, indent=1):
+            """Close an XML element with proper indentation."""
+            spaces = "  " * indent
+            lines.append(f'{spaces}</{name}>')
+        
+        # Convert ET elements to manual XML generation
+        for obj in xml_root:
+            # Get object attributes
+            obj_attribs = obj.attrib if obj.attrib else None
+            add_element(xml_lines, 'Object', attribs=obj_attribs, indent=1)
+            
+            # Add child elements
+            for child in obj:
+                if child.tag in ['Position', 'Size', 'Orientation']:
+                    add_element(xml_lines, child.tag, indent=2)
+                    for subchild in child:
+                        add_element(xml_lines, subchild.tag, subchild.text, indent=3)
+                    close_element(xml_lines, child.tag, indent=2)
+                else:
+                    add_element(xml_lines, child.tag, child.text, indent=2)
+            
+            close_element(xml_lines, 'Object', indent=1)
+        
+        xml_lines.append('</Objects>')
+        final_xml = '\n'.join(xml_lines)
+        
+        with open(output_file, 'w', encoding='utf-8', newline='\n') as f:
             f.write(final_xml)
         
         print(f"✓ Generated {output_file}")
@@ -230,4 +296,17 @@ Examples:
         return 1
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        print("Starting Falcon BMS Tacview Converter...")
+        print(f"Python path: {sys.path}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Script arguments: {sys.argv}")
+        
+        result = main()
+        print(f"Script completed with result: {result}")
+        sys.exit(result)
+    except Exception as e:
+        print(f"Fatal error in main execution: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

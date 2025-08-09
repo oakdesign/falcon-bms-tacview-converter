@@ -70,11 +70,55 @@
             "stopOnEntry": false
         },
         {
-            "name": "Tacview Generator - Balkans",
+            "name": "Tacview Generator - Korea (Quick)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
-            "args": ["balkans", "--output", "balkans_airbases.xml"],
+            "args": ["korea"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Balkans (Debug)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["balkans", "--debug", "--output", "balkans_debug.xml"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Israel (Debug)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["israel", "--debug", "--output", "israel_debug.xml"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Falcon (Debug)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["falcon", "--debug", "--output", "falcon_debug.xml"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Tacview Generator - Custom Theater (Input)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/eval_airbases_to_tacview_final.py",
+            "args": ["${input:theaterChoice}", "--debug"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
@@ -103,6 +147,20 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/src"
             }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "theaterChoice",
+            "description": "Choose a theater",
+            "type": "pickString",
+            "options": [
+                "korea",
+                "balkans", 
+                "israel",
+                "falcon"
+            ],
+            "default": "korea"
         }
     ]
 }
