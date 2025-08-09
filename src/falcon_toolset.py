@@ -89,8 +89,8 @@ def format_map_corners(corner_coords, theater_name):
             print("-" * 40)
             print(f"Latitude (decimal):     {lat:.6f}°")
             print(f"Longitude (decimal):    {lon:.6f}°")
-            print(f"Game coordinates:       {game_x:,.0f}, {game_y:,.0f} (feet)")
-            print(f"Game coordinates:       {game_x*0.3048:,.0f}, {game_y*0.3048:,.0f} (meters)")
+            print(f"Game coordinates:       {game_x:,.1f}, {game_y:,.1f} (feet)")
+            print(f"Game coordinates:       {game_x*0.3048799096:,.0f}, {game_y*0.3048799096:,.0f} (meters)")
             
             # DMS format
             lat_d = int(lat)

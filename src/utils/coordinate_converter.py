@@ -22,11 +22,11 @@ class CoordinateConverter:
         
     def feet_to_meters(self, feet):
         """Convert feet to meters."""
-        return feet * 0.3048
+        return feet * 0.3048799096
         
     def meters_to_feet(self, meters):
         """Convert meters to feet."""
-        return meters / 0.3048
+        return meters / 0.3048799096
         
     def game_to_latlon(self, game_x, game_y, from_feet=True):
         """Convert game coordinates to latitude/longitude."""
