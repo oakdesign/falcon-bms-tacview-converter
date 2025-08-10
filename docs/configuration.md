@@ -18,7 +18,7 @@ The `config.py` file is crucial for setting up the Falcon BMS Tacview Airbase Co
   'theater_name': {
       'name': "Theater Display Name",
       'folder_path': "Add-On Theater Name",  # Empty string "" for default Korea
-      'projection_string': "+proj=utm +zone=XX +datum=WGS84 +units=m +no_defs",
+      'projection_string': "++proj=tmerc +lon_0=127.5 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-3.74929e+06",
       'camp_w': 3358699.5,  # Campaign width (adjust per theater)
       'camp_h': 3358699.5,  # Campaign height (adjust per theater)
       'heightmap_subpath': "Theater/NewTerrain/HeightMaps/HeightMap.raw"
@@ -29,7 +29,7 @@ The `config.py` file is crucial for setting up the Falcon BMS Tacview Airbase Co
 - **Description**: Adjust the projection string to match the coordinate system used in your theater.
 - **Example**: 
   ```python
-  projection_string = "+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs"
+  projection_string = "3358699.5"
   ```
 
 ### Campaign Dimensions
@@ -56,7 +56,7 @@ THEATER_CONFIGS = {
     'korea': {
         'name': "Korea",
         'folder_path': "",
-        'projection_string': "+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs",
+        'projection_string': "+proj=tmerc +lon_0=127.5 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-3.74929e+06",
         'camp_w': 3358699.5,
         'camp_h': 3358699.5,
         'heightmap_subpath': "Korea/NewTerrain/HeightMaps/HeightMap.raw"
