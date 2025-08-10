@@ -176,7 +176,7 @@ To add support for a new theater:
 ### Heightmap Structure
 
 Falcon BMS heightmaps are typically:
-- 1024x1024 pixel raw files
+- 32768x32768 pixel raw files
 - 16-bit unsigned integers (little endian)
 - Covering the full theater area
 - Y-axis flipped (0,0 = southwest corner)

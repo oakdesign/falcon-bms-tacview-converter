@@ -25,16 +25,16 @@ THEATER_CONFIGS = {
     },
     'balkans': {
         'name': 'Balkans',
-        'projection_string': "+proj=utm +zone=34 +datum=WGS84 +units=m +no_defs",
+        'projection_string': "Projection string=+proj=tmerc +lon_0=16.4191 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-4.1192e+06",
         'utm_zone': 34,
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Balkans/Campaign',
         'terrain_subdir': 'Add-On Balkans/TerrData/Balkans',
         'heightmap_file': 'HeightMaps/HeightMap.raw',
-        'heightmap_size': (1024, 1024),
+        'heightmap_size': (32768, 32768),
         'heightmap_bounds': {
-            'min_x': 0, 'max_x': 2097152,
-            'min_y': 0, 'max_y': 2097152
+            'min_x': 0, 'max_x': 3358699.5,
+            'min_y': 0, 'max_y': 3358699.5
         }
     },
     'israel': {
