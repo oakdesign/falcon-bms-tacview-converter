@@ -25,7 +25,7 @@ THEATER_CONFIGS = {
     },
     'balkans': {
         'name': 'Balkans',
-        'projection_string': "Projection string=+proj=tmerc +lon_0=16.4191 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-4.1192e+06",
+        'projection_string': "+proj=tmerc +lon_0=16.4191 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-4.1192e+06",
         'utm_zone': 34,
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Balkans/Campaign',
