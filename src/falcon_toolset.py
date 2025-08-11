@@ -14,7 +14,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import THEATER_CONFIGS, get_theater_paths, get_available_theaters
-from utils.coordinate_converter import CoordinateConverter
+from utils.coordinate_converter import CoordinateConverter, create_proj_string
 from utils.file_parser import parse_stations_file
 
 def format_coordinate_output(lat, lon, x=None, y=None, elevation=None, unit='feet', include_dms=False):
@@ -188,6 +188,43 @@ def list_theaters(args):
         print("\nNo theaters found. Please check your Falcon BMS installation path in config.py")
     
     return 0
+def calculate_projection_string(args):
+    """Calculate projection string for a given center lat/lon."""
+    try:
+        center_lat = float(args.center_lat)
+        center_lon = float(args.center_lon)
+        desired_y = float(args.desired_y) if hasattr(args, 'desired_y') and args.desired_y else 512000
+    except ValueError:
+        print("Error: Coordinates must be numeric values")
+        return 1
+    
+    print(f"🗺️  Calculating projection string for:")
+    print(f"   Center Latitude:  {center_lat:.6f}°")
+    print(f"   Center Longitude: {center_lon:.6f}°")
+    print(f"   Desired Y value:  {desired_y:,.0f} meters")
+    print()
+    
+    try:
+        # Calculate the required false northing
+        y_0 = create_proj_string(center_lat, center_lon, desired_y)
+        
+        # Construct the complete projection string
+        proj_string = f"+proj=tmerc +lon_0={center_lon} +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0={y_0:.5e}"
+        
+        print("✅ Projection string calculated successfully!")
+        print("=" * 60)
+        print(f"Projection String:")
+        print(f"{proj_string}")
+        print("=" * 60)
+        print()
+        print("You can use this projection string in your theater configuration.")
+        print("Copy the string above and add it to your theater config in config.py")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"Error calculating projection string: {e}")
+        return 1
 
 def main():
     """Main entry point."""
@@ -210,6 +247,9 @@ Examples:
   
   # List available theaters
   %(prog)s theaters
+  
+  # Generate projection string for new theater
+  %(prog)s projection 37.5 127.0 --desired-y 512000
         """
     )
     
@@ -242,7 +282,15 @@ Examples:
     # Theaters command
     theaters_parser = subparsers.add_parser('theaters', help='List available theaters')
     theaters_parser.set_defaults(func=list_theaters)
-    
+
+    # Projection string command
+    projection_parser = subparsers.add_parser('projection', help='Generate projection string for a given center lat/lon')
+    projection_parser.add_argument('center_lat', help='Center latitude of the theater (decimal degrees)')
+    projection_parser.add_argument('center_lon', help='Center longitude of the theater (decimal degrees)')
+    projection_parser.add_argument('--desired-y', type=float, default=512000,
+                                 help='Desired Y position in projected space (default: 512000 meters)')
+    projection_parser.set_defaults(func=calculate_projection_string)
+
     # Parse arguments
     args = parser.parse_args()
     

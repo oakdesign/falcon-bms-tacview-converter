@@ -190,3 +190,26 @@ def reverse_convert_coordinates(x, y, projection_string):
     lon, lat = proj(x, y, inverse=True)
 
     return lat, lon
+
+def create_proj_string(center_lat, center_lon, desired_y=512000):
+    """
+    Create a Transverse Mercator projection string based on center coordinates.
+    
+    Args:
+        center_lat (float): Center latitude in decimal degrees.
+        center_lon (float): Center longitude in decimal degrees.
+        desired_y (float): Desired Y position (in meters) in projected space. Default is 512000.
+        
+    Returns:
+        float: The required false northing (y_0) value.
+    """
+    # Use temporary projection with y_0 = 0
+    proj = Proj(f"+proj=tmerc +lon_0={center_lon} +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=0")
+    
+    # Project the geographic center point
+    _, raw_y = proj(center_lon, center_lat)
+
+    # Calculate required false northing
+    y_0 = desired_y - raw_y
+    
+    return y_0

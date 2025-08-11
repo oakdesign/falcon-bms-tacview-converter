@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
 
         {
             "name": "Falcon Toolset - Convert Coordinates",
@@ -42,6 +41,28 @@
             "request": "launch",
             "program": "${workspaceFolder}/src/falcon_toolset.py",
             "args": ["corners", "--theater", "korea"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - Calculate projection string",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["projection","38.5", "127.5", "--desired-y", "512000"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "stopOnEntry": false
+        },
+        {
+            "name": "Falcon Toolset - Calculate projection string (default Y)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/falcon_toolset.py",
+            "args": ["projection", "38.5", "127.5"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "justMyCode": true,
