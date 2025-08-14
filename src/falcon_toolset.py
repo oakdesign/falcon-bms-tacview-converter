@@ -14,7 +14,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import THEATER_CONFIGS, get_theater_paths, get_available_theaters
-from utils.coordinate_converter import CoordinateConverter, create_proj_string
+from utils.coordinate_converter import (CoordinateConverter, create_proj_string, 
+                                      ElevationError, HeightmapNotFoundError, 
+                                      CoordinatesOutOfBoundsError, HeightmapReadError)
+from utils.theater_config_loader import get_available_theaters as get_dynamic_theaters, get_theater_config
 from utils.file_parser import parse_stations_file
 
 def format_coordinate_output(lat, lon, x=None, y=None, elevation=None, unit='feet', include_dms=False):
@@ -26,17 +29,8 @@ def format_coordinate_output(lat, lon, x=None, y=None, elevation=None, unit='fee
         print(f"   Longitude: {lon:.6f}° ({lon:.1f}° {abs(lon-int(lon))*60:.4f}')")
         
         if elevation is not None:
-            if elevation < -900:  # Error code
-                error_messages = {
-                    -999: "Heightmap file not found",
-                    -998: "Error reading heightmap file",
-                    -997: "Coordinates outside valid range",
-                    -996: "File read error"
-                }
-                print(f"   Elevation: {error_messages.get(elevation, 'Unknown error')}")
-            else:
-                elevation_m = elevation * 0.3048
-                print(f"   Elevation: {elevation:.0f} ft / {elevation_m:.1f} m")
+            elevation_m = elevation * 0.3048
+            print(f"   Elevation: {elevation:.0f} ft / {elevation_m:.1f} m")
         
         if include_dms:
             lat_d = int(lat)
@@ -110,12 +104,16 @@ def convert_coordinates(args):
     """Handle coordinate conversion command."""
     theater_name = args.theater
     
-    if theater_name not in THEATER_CONFIGS:
-        print(f"Error: Unknown theater '{theater_name}'")
-        print(f"Available theaters: {', '.join(THEATER_CONFIGS.keys())}")
+    # Try to get theater config using dynamic loading
+    try:
+        theater_config = get_theater_config(theater_name)
+    except ValueError as e:
+        print(f"Error: {e}")
+        available_theaters = get_dynamic_theaters()
+        print(f"Available theaters: {', '.join(available_theaters)}")
         return 1
     
-    theater_config = THEATER_CONFIGS[theater_name]
+    
     
     # Get heightmap path if elevation is requested
     heightmap_path = None
@@ -126,8 +124,8 @@ def convert_coordinates(args):
         except Exception as e:
             print(f"Warning: Could not get heightmap path: {e}")
     
-    # Initialize converter
-    converter = CoordinateConverter(theater_config, heightmap_path)
+    # Initialize converter using new theater_name parameter
+    converter = CoordinateConverter(theater_name=theater_name, heightmap_path=heightmap_path)
     
     try:
         x_or_lat = float(args.x_or_lat)
@@ -147,11 +145,22 @@ def convert_coordinates(args):
         # Convert game coordinates to lat/lon
         game_x, game_y = x_or_lat, y_or_lon
         from_feet = (args.unit == 'feet')
-        lat, lon = converter.game_to_latlon(game_x, game_y, from_feet=from_feet)
+        # Use the ultra-high precision method with empirical correction (±5m accuracy)
+        #lat, lon = converter.game_to_latlon_high_precision(game_x, game_y, from_feet=from_feet)
+        lat, lon = converter.game_to_latlon_grid_karney(game_x, game_y, from_feet=from_feet)
         
         elevation = None
         if args.elevation:
-            elevation = converter.get_elevation(game_x, game_y, from_feet=from_feet)
+            try:
+                elevation = converter.get_elevation(game_x, game_y, from_feet=from_feet)
+            except HeightmapNotFoundError:
+                print("   Elevation: Heightmap file not found")
+            except CoordinatesOutOfBoundsError:
+                print("   Elevation: Coordinates outside valid range")
+            except HeightmapReadError as e:
+                print(f"   Elevation: Error reading heightmap data ({e})")
+            except ElevationError as e:
+                print(f"   Elevation: {e}")
         
         format_coordinate_output(lat, lon, game_x, game_y, elevation, args.unit, args.dms)
     
@@ -161,13 +170,16 @@ def show_corners(args):
     """Handle map corners command."""
     theater_name = args.theater
     
-    if theater_name not in THEATER_CONFIGS:
-        print(f"Error: Unknown theater '{theater_name}'")
-        print(f"Available theaters: {', '.join(THEATER_CONFIGS.keys())}")
+    # Try to get theater config using dynamic loading
+    try:
+        theater_config = get_theater_config(theater_name)
+    except ValueError as e:
+        print(f"Error: {e}")
+        available_theaters = get_dynamic_theaters()
+        print(f"Available theaters: {', '.join(available_theaters)}")
         return 1
-    
-    theater_config = THEATER_CONFIGS[theater_name]
-    converter = CoordinateConverter(theater_config)
+
+    converter = CoordinateConverter(theater_name=theater_name)
     
     corner_coords = converter.get_map_corners(in_feet=True)
     format_map_corners(corner_coords, theater_name)
@@ -176,17 +188,24 @@ def show_corners(args):
 
 def list_theaters(args):
     """List available theaters."""
-    available = get_available_theaters()
-    
     print("Available Theaters:")
     print("=" * 40)
     
-    for theater_name in THEATER_CONFIGS:
-        config = THEATER_CONFIGS[theater_name]
-        status = "✓ Available" if theater_name in available else "✗ Not found"
-        print(f"{theater_name:<10} - {config['name']:<15} (UTM Zone {config['utm_zone']}) {status}")
+    # Get theaters from dynamic loading (includes both file-based and static)
+    available_theaters = get_dynamic_theaters()
     
-    if not available:
+    for theater in sorted(available_theaters):
+        try:
+            config = get_theater_config(theater)
+            name = config.get('name', theater.title())
+            center_lat = config.get('center_lat', 'Unknown')
+            center_lon = config.get('center_lon', 'Unknown')
+            utm_zone = config.get('utm_zone', 'Unknown')
+            print(f"{theater:<10} - {name:<15} (Center: {center_lat}, {center_lon}, UTM Zone {utm_zone})")
+        except Exception as e:
+            print(f"{theater:<10} - Error loading config: {e}")
+    
+    if not available_theaters:
         print("\nNo theaters found. Please check your Falcon BMS installation path in config.py")
     
     return 0
