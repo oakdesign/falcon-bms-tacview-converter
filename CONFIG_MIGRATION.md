@@ -105,4 +105,36 @@ The system has been tested with:
 - Coordinate conversion (`python falcon_toolset.py convert ...`)
 - BMS detection and fallback behavior
 - All functionality works correctly with both BMS files and static fallback
+
+## Files That Can Be Safely Removed
+
+After the migration to the unified configuration system, these files are no longer needed:
+
+### ✅ Ready for Removal
+- **`src/config.py`** - Replaced by `theater_config.py` + `theater_data.py`
+- **`src/utils/theater_config_loader.py`** - Functionality moved to `theater_config.py`
+
+### ⚠️ Keep These Files
+- **`theater_data.py`** - Static configuration data (fallback)
+- **`theater_config.py`** - New unified configuration system
+
+## How to Remove Old Files
+
+```bash
+# Remove old configuration files
+rm src/config.py
+rm src/utils/theater_config_loader.py
+
+# Test that everything still works
+python src/falcon_toolset.py theaters
+python src/falcon_toolset.py convert 1417055 736872 --theater korea
+```
+
+## Verification Steps
+
+After removing old files, verify the system works:
+
+1. **Theater Discovery**: `python falcon_toolset.py theaters`
+2. **Coordinate Conversion**: `python falcon_toolset.py convert 1417055 736872 --theater korea`
+3. **BMS Detection**: `python -c "from theater_config import is_bms_installation_available; print(is_bms_installation_available())"`
 """

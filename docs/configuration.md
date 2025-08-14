@@ -1,75 +1,141 @@
 # Configuration
 
-The `config.py` file is crucial for setting up the Falcon BMS Tacview Airbase Converter. It allows users to customize various settings to match their Falcon BMS installation and desired theater configurations.
+The Falcon BMS Tacview Airbase Converter uses an intelligent, unified configuration system that automatically discovers theater configurations from your Falcon BMS installation. **No manual configuration is required for most users!**
 
-## Configuration Settings
+## How Configuration Works
 
-### Falcon BMS Installation Directory
-- **Description**: Set the path to your Falcon BMS installation directory.
-- **Example**: 
-  ```python
-  falcon_bms_path = "C:/Path/To/Falcon/BMS"
-  ```
+The system uses a **smart fallback approach**:
 
-### Theater Configurations
-- **Description**: Add or modify theater configurations in the `THEATER_CONFIGS` dictionary.
-- **Structure**:
-  ```python
-  'theater_name': {
-      'name': "Theater Display Name",
-      'folder_path': "Add-On Theater Name",  # Empty string "" for default Korea
-      'projection_string': "++proj=tmerc +lon_0=127.5 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-3.74929e+06",
-      'camp_w': 3358699.5,  # Campaign width (adjust per theater)
-      'camp_h': 3358699.5,  # Campaign height (adjust per theater)
-      'heightmap_subpath': "Theater/NewTerrain/HeightMaps/HeightMap.raw"
-  }
-  ```
+1. **Primary**: Automatically reads theater configuration from your BMS installation files
+   - `Data/TerrData/TheaterDefinition/Theater.lst` - Lists available theaters
+   - Individual `.tdf` (Theater Definition Files) - Theater metadata and paths
+   - `Theater.txt` files - Coordinate system parameters
 
-### Projection Settings
-- **Description**: Adjust the projection string to match the coordinate system used in your theater.
-- **Example**: 
-  ```python
-  projection_string = "3358699.5"
-  ```
+2. **Fallback**: Uses built-in static configuration when BMS files are unavailable
 
-### Campaign Dimensions
-- **Description**: Set the campaign width and height based on the specific theater requirements.
-- **Example**: 
-  ```python
-  camp_w = 3358699.5
-  camp_h = 3358699.5
-  ```
+## Automatic Theater Discovery
 
-### Heightmap Path
-- **Description**: Specify the relative path to the heightmap file for the theater.
-- **Example**: 
-  ```python
-  heightmap_subpath = "Theater/NewTerrain/HeightMaps/HeightMap.raw"
-  ```
+The system automatically discovers theaters by:
 
-## Example Configuration
+1. **Reading Theater.lst**: Scans your BMS installation's theater list
+2. **Parsing .tdf Files**: Extracts theater names, directories, and settings
+3. **Loading Theater.txt**: Gets coordinate system and projection data
+4. **Smart Merging**: Combines all sources into complete configuration
 
-Here is an example of how a theater configuration might look in `config.py`:
+### Example Discovered Theaters
+
+When you run the tool, it might discover theaters like:
+- `korea_kto` - Korea KTO (from Korea KTO.tdf)
+- `balkans` - Balkans (from Balkans.tdf) 
+- `israel` - Israel (static fallback)
+- `falcon` - Falcon (static fallback)
+
+## Manual Configuration (Advanced)
+
+### Setting BMS Installation Path
+
+If the tool can't find your BMS installation automatically, you can specify it:
 
 ```python
-THEATER_CONFIGS = {
-    'korea': {
-        'name': "Korea",
-        'folder_path': "",
-        'projection_string': "+proj=tmerc +lon_0=127.5 +ellps=WGS84 +k=0.9996 +units=m +x_0=512000 +y_0=-3.74929e+06",
-        'camp_w': 3358699.5,
-        'camp_h': 3358699.5,
-        'heightmap_subpath': "Korea/NewTerrain/HeightMaps/HeightMap.raw"
-    },
-    'balkans': {
-        'name': "Balkans",
-        'folder_path': "Add-On Theater/Balkans",
-        'projection_string': "+proj=utm +zone=34 +datum=WGS84 +units=m +no_defs",
-        'camp_w': 3000000.0,
-        'camp_h': 3000000.0,
-        'heightmap_subpath': "Balkans/NewTerrain/HeightMaps/HeightMap.raw"
+from theater_config import set_falcon_bms_root
+set_falcon_bms_root("/path/to/your/falcon/bms")
+```
+
+### Checking Available Theaters
+
+```python
+from theater_config import get_available_theaters, get_theater_config
+
+# List all discovered theaters
+theaters = get_available_theaters()
+print("Available theaters:", theaters)
+
+# Get configuration for a specific theater
+config = get_theater_config('korea_kto')
+print("Theater name:", config['name'])
+print("Campaign dir:", config['campaign_subdir'])
+```
+
+### Static Configuration Override
+
+For advanced users who need to override or add theaters, you can modify `theater_data.py`:
+
+```python
+# In theater_data.py
+STATIC_THEATER_CONFIGS = {
+    'my_custom_theater': {
+        'name': 'My Custom Theater',
+        'projection_string': "+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs",
+        'center_lat': 50.0,
+        'center_lon': 10.0,
+        'utm_zone': 33,
+        'utm_hemisphere': 'north',
+        'campaign_subdir': 'My Custom Campaign',
+        'terrain_subdir': 'My Custom Theater/TerrData',
+        'heightmap_file': 'HeightMaps/HeightMap.raw',
+        'heightmap_size': (1024, 1024),
+        'heightmap_bounds': {
+            'min_x': 0, 'max_x': 2097152,
+            'min_y': 0, 'max_y': 2097152
+        }
     }
 }
 ```
 
-By properly configuring the `config.py` file, users can ensure that the Falcon BMS Tacview Airbase Converter operates correctly with their specific setup.
+## Configuration File Structure
+
+### Theater Definition Files (.tdf)
+
+The system reads these BMS files to discover theaters:
+
+```
+# Example Balkans.tdf content
+name Balkans
+desc Balkans Theater BMS 4.38.0
+campaigndir Add-On Balkans\Campaign
+terraindir Add-On Balkans\Terrdata\Balkans
+artdir Add-On Balkans
+objectdir Add-On Balkans\Terrdata\objects
+sounddir Add-On Balkans\Sounds
+```
+
+### Theater.txt Files
+
+Coordinate system parameters:
+
+```
+# Example Theater.txt content
+CenterLat 41.8327
+CenterLong 16.4191
+TheaterSizeMeters 1024000
+HeightmapSize 32768
+```
+
+## Migration from Old config.py
+
+If you were using the old `config.py` system:
+
+- ✅ **No action required** - The new system includes all previous theaters as fallbacks
+- ✅ **Automatic discovery** - New theaters are found automatically
+- ✅ **Better accuracy** - Uses actual BMS configuration files
+- ✅ **Future-proof** - Works with new theater add-ons automatically
+
+## Troubleshooting
+
+### Theater Not Found
+```bash
+# List available theaters
+python falcon_toolset.py theaters
+
+# Check if BMS installation is detected
+python -c "from theater_config import is_bms_installation_available; print('BMS detected:', is_bms_installation_available())"
+```
+
+### Custom BMS Path
+```python
+# Set custom BMS installation path
+from theater_config import set_falcon_bms_root
+set_falcon_bms_root("C:/Games/Falcon BMS 4.38")
+```
+
+The new configuration system makes the tool much more robust and user-friendly by automatically adapting to your BMS installation!

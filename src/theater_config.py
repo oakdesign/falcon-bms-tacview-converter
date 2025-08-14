@@ -381,6 +381,20 @@ class TheaterConfigManager:
                 'min_x': 0, 'max_x': 3358699.5,
                 'min_y': 0, 'max_y': 3358699.5
             }
+        
+        # Ensure we have coordinate system data - use static fallback for known theaters
+        if 'projection_string' not in config or 'center_lat' not in config or 'center_lon' not in config:
+            # Try to match with known static theaters
+            for static_key, static_config in STATIC_THEATER_CONFIGS.items():
+                if (theater_name == static_key or 
+                    config.get('name', '').lower() in static_config.get('name', '').lower() or
+                    static_config.get('name', '').lower() in config.get('name', '').lower()):
+                    
+                    # Copy missing coordinate data from static config
+                    for coord_key in ['projection_string', 'center_lat', 'center_lon', 'utm_zone', 'utm_hemisphere']:
+                        if coord_key not in config and coord_key in static_config:
+                            config[coord_key] = static_config[coord_key]
+                    break
 
 
 # Global instance

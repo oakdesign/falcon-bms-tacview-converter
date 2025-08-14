@@ -13,7 +13,7 @@ import os
 # Add the src directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from theater_config import get_theater_config, get_available_theaters, get_theater_paths, THEATER_CONFIGS
+from theater_config import get_theater_config, get_available_theaters, get_theater_paths
 from utils.coordinate_converter import (CoordinateConverter, create_proj_string, 
                                       ElevationError, HeightmapNotFoundError, 
                                       CoordinatesOutOfBoundsError, HeightmapReadError)
@@ -58,7 +58,7 @@ def format_coordinate_output(lat, lon, x=None, y=None, elevation=None, unit='fee
 
 def format_map_corners(corner_coords, theater_name):
     """Format map corner coordinates for display."""
-    theater_config = THEATER_CONFIGS[theater_name]
+    theater_config = get_theater_config(theater_name)
     
     print("=" * 60)
     print(f"MAP CORNER COORDINATES - {theater_config['name'].upper()}")
@@ -280,7 +280,7 @@ Examples:
     convert_parser.add_argument('x_or_lat', help='X coordinate (game) or latitude (reverse)')
     convert_parser.add_argument('y_or_lon', help='Y coordinate (game) or longitude (reverse)')
     convert_parser.add_argument('--theater', default='korea', 
-                               choices=list(THEATER_CONFIGS.keys()),
+                               choices=get_available_theaters(),
                                help='Theater to use for conversion (default: korea)')
     convert_parser.add_argument('--elevation', action='store_true',
                                help='Include elevation lookup from heightmaps')
@@ -295,7 +295,7 @@ Examples:
     # Corners command
     corners_parser = subparsers.add_parser('corners', help='Show map corner coordinates')
     corners_parser.add_argument('--theater', default='korea',
-                               choices=list(THEATER_CONFIGS.keys()),
+                               choices=get_available_theaters(),
                                help='Theater to show corners for (default: korea)')
     corners_parser.set_defaults(func=show_corners)
     
