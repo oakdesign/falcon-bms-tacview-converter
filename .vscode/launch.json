@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Falcon Toolset - Convert Coordinates",
             "type": "debugpy",

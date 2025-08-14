@@ -14,7 +14,7 @@ from xml.dom import minidom
 # Add the src directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from theater_config import get_theater_config, get_theater_paths, get_available_theaters, THEATER_CONFIGS
+from theater_config import get_theater_config, get_theater_paths, get_available_theaters
 from utils.coordinate_converter import CoordinateConverter
 from utils.file_parser import parse_stations_file, get_all_airbase_data
 
@@ -164,9 +164,16 @@ Examples:
         """
     )
     
-    parser.add_argument('theater', nargs='?', default='korea',
-                       choices=list(THEATER_CONFIGS.keys()),
-                       help='Theater to process (default: korea)')
+    # Get available theaters for argument validation
+    try:
+        available_theaters = get_available_theaters()
+        parser.add_argument('theater', nargs='?', default='korea',
+                           choices=available_theaters,
+                           help='Theater to process (default: korea)')
+    except Exception as e:
+        # Fallback if we can't get available theaters
+        parser.add_argument('theater', nargs='?', default='korea',
+                           help='Theater to process (default: korea)')
     parser.add_argument('--output', '-o', 
                        help='Output XML filename (default: <theater>_airbases_tacview.xml)')
     parser.add_argument('--debug', action='store_true',
@@ -180,13 +187,6 @@ Examples:
     output_file = args.output or f"{theater_name}_airbases_tacview.xml"
     
     print(f"Theater: {theater_name}, Output file: {output_file}")
-    
-    # Validate theater
-    print(f"Available theater configs: {list(THEATER_CONFIGS.keys())}")
-    if theater_name not in THEATER_CONFIGS:
-        print(f"Error: Unknown theater '{theater_name}'")
-        print(f"Available theaters: {', '.join(THEATER_CONFIGS.keys())}")
-        return 1
     
     # Check if theater is available
     print("Checking available theaters...")
@@ -204,19 +204,26 @@ Examples:
         print(f"Available theaters: {', '.join(available_theaters)}")
         return 1
     
-    print(f"Processing {THEATER_CONFIGS[theater_name]['name']} theater...")
+    # Get theater configuration
+    try:
+        theater_config = get_theater_config(theater_name)
+        print(f"Processing {theater_config['name']} theater...")
+    except Exception as e:
+        print(f"Error loading theater config for '{theater_name}': {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
     
     try:
         # Get file paths
         paths = get_theater_paths(theater_name)
-        theater_config = THEATER_CONFIGS[theater_name]
         
         if args.debug:
             print(f"Theater config: {theater_config}")
             print(f"File paths: {paths}")
         
         # Initialize coordinate converter
-        converter = CoordinateConverter(theater_config, paths['heightmap'])
+        converter = CoordinateConverter(theater_config=theater_config, heightmap_path=paths['heightmap'])
         
         # Parse ICAO mappings
         print("Loading ICAO code mappings...")
@@ -284,7 +291,7 @@ Examples:
             f.write(final_xml)
         
         print(f"✓ Generated {output_file}")
-        print(f"  Import this file into Tacview to see {THEATER_CONFIGS[theater_name]['name']} airbases")
+        print(f"  Import this file into Tacview to see {theater_config['name']} airbases")
         
         return 0
         

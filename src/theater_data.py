@@ -34,7 +34,7 @@ STATIC_THEATER_CONFIGS = {
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Balkans/Campaign',
         'terrain_subdir': 'Add-On Balkans/TerrData/Balkans',
-        'heightmap_file': 'HeightMaps/HeightMap.raw',
+        'heightmap_file': 'NewTerrain/Heightmaps/Heightmap.raw',
         'heightmap_size': (32768, 32768),
         'heightmap_bounds': {
             'min_x': 0, 'max_x': 3358699.5,
