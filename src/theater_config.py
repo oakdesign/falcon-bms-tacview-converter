@@ -55,9 +55,9 @@ class TheaterConfigManager:
                         for line in f:
                             line = line.strip()
                             if line and not line.startswith('#'):
-                                theater_name = self._extract_theater_name_from_tdf_path(line)
-                                if theater_name:
-                                    theaters.add(theater_name.lower())
+                                theater_info = self._parse_tdf_reference(line)
+                                if theater_info:
+                                    theaters.add(theater_info['key'])
             except Exception:
                 pass  # Silent fallback to static config
         
@@ -107,35 +107,158 @@ class TheaterConfigManager:
         
         return paths
     
-    def _extract_theater_name_from_tdf_path(self, tdf_path: str) -> Optional[str]:
-        """Extract theater name from TDF file path."""
-        tdf_path_lower = tdf_path.lower()
-        
-        if 'korea' in tdf_path_lower:
-            return 'korea'
-        elif 'balkan' in tdf_path_lower:
-            return 'balkans'
-        elif 'israel' in tdf_path_lower:
-            return 'israel'
-        elif 'falcon' in tdf_path_lower:
-            return 'falcon'
-        
-        return None
+    def _parse_tdf_reference(self, tdf_path: str) -> Optional[Dict]:
+        """Parse TDF file reference from theater.lst and extract theater info."""
+        try:
+            # Build full path to TDF file
+            full_tdf_path = os.path.join(self.falcon_bms_root, 'Data', tdf_path.replace('\\', os.sep))
+            
+            if not os.path.exists(full_tdf_path):
+                return None
+            
+            # Parse the TDF file
+            tdf_config = self._parse_tdf_file(full_tdf_path)
+            if not tdf_config:
+                return None
+            
+            # Generate a key from the theater name
+            theater_name = tdf_config.get('name', '')
+            if theater_name:
+                # Create a normalized key from the theater name
+                theater_key = re.sub(r'[^a-z0-9]+', '_', theater_name.lower()).strip('_')
+            else:
+                # Fallback: extract from filename
+                filename = os.path.basename(full_tdf_path)
+                theater_key = os.path.splitext(filename)[0].lower().replace(' ', '_')
+            
+            return {
+                'key': theater_key,
+                'config': tdf_config,
+                'tdf_path': full_tdf_path
+            }
+            
+        except Exception:
+            return None
+    
+    def _parse_tdf_file(self, tdf_file_path: str) -> Optional[Dict]:
+        """Parse a .tdf theater definition file."""
+        try:
+            with open(tdf_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+            
+            config = {}
+            
+            # Parse key-value pairs from TDF file
+            patterns = {
+                'name': r'^name\s+(.+)$',
+                'desc': r'^desc\s+(.+)$',
+                'bitmap': r'^bitmap\s+(.+)$',
+                'campaigndir': r'^campaigndir\s+(.+)$',
+                'terraindir': r'^terraindir\s+(.+)$',
+                'tileset': r'^tileset\s+(.+)$',
+                'artdir': r'^artdir\s+(.+)$',
+                'cockpitdir': r'^cockpitdir\s+(.+)$',
+                'moviedir': r'^moviedir\s+(.+)$',
+                'objectdir': r'^objectdir\s+(.+)$',
+                '3ddatadir': r'^3ddatadir\s+(.+)$',
+                'sounddir': r'^sounddir\s+(.+)$',
+                'tacrefdir': r'^tacrefdir\s+(.+)$',
+                'simdatadir': r'^simdatadir\s+(.+)$',
+                'subtitlesdir': r'^subtitlesdir\s+(.+)$',
+                'splashdir': r'^splashdir\s+(.+)$',
+                'doubleres2dmap': r'^doubleres2dmap\s+(\d+)$',
+                'magneticdeclination': r'^magneticdeclination\s+([+-]?\d+\.?\d*)$'
+            }
+            
+            for line in content.split('\n'):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                
+                for key, pattern in patterns.items():
+                    match = re.match(pattern, line, re.IGNORECASE)
+                    if match:
+                        value = match.group(1).strip()
+                        if key in ['doubleres2dmap']:
+                            config[key] = int(value)
+                        elif key in ['magneticdeclination']:
+                            config[key] = float(value)
+                        else:
+                            config[key] = value
+                        break
+            
+            return config if config else None
+            
+        except Exception:
+            return None
     
     def _load_theater_from_bms_files(self, theater_name: str) -> Optional[Dict]:
         """Load theater configuration from BMS installation files."""
-        theater_txt_path = self._find_theater_txt_path(theater_name)
-        if not theater_txt_path:
+        # First, try to find TDF file for this theater
+        tdf_config = self._find_tdf_config_for_theater(theater_name)
+        if not tdf_config:
             return None
         
-        config = self._parse_theater_txt(theater_txt_path)
-        if not config:
-            return None
+        # Try to find and parse theater.txt file
+        theater_txt_config = None
+        theater_txt_path = self._find_theater_txt_path_from_tdf(tdf_config)
+        if theater_txt_path:
+            theater_txt_config = self._parse_theater_txt(theater_txt_path)
         
-        # Add additional fields from static config or derived values
+        # Combine TDF and theater.txt configs
+        config = tdf_config.copy()
+        if theater_txt_config:
+            config.update(theater_txt_config)
+        
+        # Add additional fields from static config if needed
         self._enhance_config_from_static(config, theater_name)
         
         return config
+    
+    def _find_tdf_config_for_theater(self, theater_name: str) -> Optional[Dict]:
+        """Find TDF configuration for the given theater name."""
+        if not self.is_bms_installation_available():
+            return None
+        
+        try:
+            theater_lst_path = os.path.join(
+                self.falcon_bms_root, 
+                'Data', 'TerrData', 'TheaterDefinition', 'Theater.lst'
+            )
+            
+            if not os.path.exists(theater_lst_path):
+                return None
+            
+            with open(theater_lst_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        theater_info = self._parse_tdf_reference(line)
+                        if theater_info and theater_info['key'] == theater_name:
+                            return theater_info['config']
+            
+        except Exception:
+            pass
+        
+        return None
+    
+    def _find_theater_txt_path_from_tdf(self, tdf_config: Dict) -> Optional[str]:
+        """Find theater.txt path using TDF configuration."""
+        terrain_dir = tdf_config.get('terraindir')
+        if not terrain_dir:
+            return None
+        
+        # Try common theater.txt locations within the terrain directory
+        search_paths = [
+            os.path.join(self.falcon_bms_root, 'Data', terrain_dir, 'Theater.txt'),
+            os.path.join(self.falcon_bms_root, 'Data', terrain_dir, 'NewTerrain', 'Theater.txt')
+        ]
+        
+        for path in search_paths:
+            if os.path.exists(path):
+                return path
+        
+        return None
     
     def _find_theater_txt_path(self, theater_name: str) -> Optional[str]:
         """Find theater.txt file for the given theater."""
@@ -233,10 +356,31 @@ class TheaterConfigManager:
             for key, value in static_config.items():
                 if key not in config:
                     config[key] = value
-            
-            # Ensure we have a name
-            if 'name' not in config:
-                config['name'] = static_config.get('name', theater_name.title())
+        
+        # Convert TDF paths to standard config format
+        if 'campaigndir' in config and 'campaign_subdir' not in config:
+            config['campaign_subdir'] = config['campaigndir']
+        
+        if 'terraindir' in config and 'terrain_subdir' not in config:
+            config['terrain_subdir'] = config['terraindir']
+        
+        # Ensure we have required paths for heightmap
+        if 'terrain_subdir' in config and 'heightmap_file' not in config:
+            config['heightmap_file'] = 'HeightMaps/HeightMap.raw'
+        
+        # Ensure we have a name
+        if 'name' not in config:
+            config['name'] = theater_name.title()
+        
+        # Set default heightmap properties if not present
+        if 'heightmap_size' not in config:
+            config['heightmap_size'] = (32768, 32768)  # Default size
+        
+        if 'heightmap_bounds' not in config:
+            config['heightmap_bounds'] = {
+                'min_x': 0, 'max_x': 3358699.5,
+                'min_y': 0, 'max_y': 3358699.5
+            }
 
 
 # Global instance
