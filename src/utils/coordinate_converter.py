@@ -8,14 +8,14 @@ import numpy as np
 import pyproj
 from pyproj import Proj
 
-# Import theater config loader
+# Import unified theater config
 try:
-    from .theater_config_loader import get_theater_config
+    from ..theater_config import get_theater_config
 except ImportError:
     # Fallback for direct execution
     import sys
-    sys.path.append(os.path.dirname(__file__))
-    from theater_config_loader import get_theater_config
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from theater_config import get_theater_config
 
 # Custom exceptions for elevation data
 class ElevationError(Exception):
@@ -60,8 +60,11 @@ class CoordinateConverter:
             # Legacy mode: use provided config
             self.theater_config = theater_config
         elif theater_name:
-            # New mode: load from files with fallback to static config
-            self.theater_config = get_theater_config(theater_name, falcon_bms_root)
+            # New mode: load from unified config system
+            if falcon_bms_root:
+                from ..theater_config import set_falcon_bms_root
+                set_falcon_bms_root(falcon_bms_root)
+            self.theater_config = get_theater_config(theater_name)
         else:
             raise ValueError("Either theater_name or theater_config must be provided")
         

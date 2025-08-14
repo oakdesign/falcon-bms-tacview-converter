@@ -13,11 +13,10 @@ import os
 # Add the src directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import THEATER_CONFIGS, get_theater_paths, get_available_theaters
+from theater_config import get_theater_config, get_available_theaters, get_theater_paths, THEATER_CONFIGS
 from utils.coordinate_converter import (CoordinateConverter, create_proj_string, 
                                       ElevationError, HeightmapNotFoundError, 
                                       CoordinatesOutOfBoundsError, HeightmapReadError)
-from utils.theater_config_loader import get_available_theaters as get_dynamic_theaters, get_theater_config
 from utils.file_parser import parse_stations_file
 
 def format_coordinate_output(lat, lon, x=None, y=None, elevation=None, unit='feet', include_dms=False):
@@ -109,7 +108,7 @@ def convert_coordinates(args):
         theater_config = get_theater_config(theater_name)
     except ValueError as e:
         print(f"Error: {e}")
-        available_theaters = get_dynamic_theaters()
+        available_theaters = get_available_theaters()
         print(f"Available theaters: {', '.join(available_theaters)}")
         return 1
     
@@ -175,7 +174,7 @@ def show_corners(args):
         theater_config = get_theater_config(theater_name)
     except ValueError as e:
         print(f"Error: {e}")
-        available_theaters = get_dynamic_theaters()
+        available_theaters = get_available_theaters()
         print(f"Available theaters: {', '.join(available_theaters)}")
         return 1
 
@@ -192,7 +191,7 @@ def list_theaters(args):
     print("=" * 40)
     
     # Get theaters from dynamic loading (includes both file-based and static)
-    available_theaters = get_dynamic_theaters()
+    available_theaters = get_available_theaters()
     
     for theater in sorted(available_theaters):
         try:

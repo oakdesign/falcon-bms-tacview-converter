@@ -14,7 +14,7 @@ from xml.dom import minidom
 # Add the src directory to the path so we can import our modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import THEATER_CONFIGS, get_theater_paths, get_available_theaters
+from theater_config import get_theater_config, get_theater_paths, get_available_theaters, THEATER_CONFIGS
 from utils.coordinate_converter import CoordinateConverter
 from utils.file_parser import parse_stations_file, get_all_airbase_data
 

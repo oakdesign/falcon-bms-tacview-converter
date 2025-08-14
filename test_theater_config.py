@@ -9,7 +9,7 @@ import os
 src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src')
 sys.path.insert(0, src_path)
 
-from utils.theater_config_loader import get_theater_config, get_available_theaters
+from theater_config import get_theater_config, get_available_theaters
 from utils.coordinate_converter import CoordinateConverter
 
 def test_theater_config_loading():
