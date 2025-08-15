@@ -50,11 +50,17 @@ def generate_tacview_xml(airbases, converter, debug=False):
             if elevation < -900:  # Error code
                 elevation = 0
             
-            # Determine ID format
-            if airbase['icao'].startswith('AB'):
-                obj_id = f"CampId:{airbase['id']}"
-            else:
+            # Determine ID format and display logic
+            has_icao = airbase['icao'] is not None
+            
+            if has_icao:
                 obj_id = f"ICAO:{airbase['icao']}"
+                display_icao = airbase['icao']
+            else:
+                # Use camp ID for airbases without ICAO codes
+                camp_id_string = airbase.get('camp_id_string', f"AB{airbase['id']:03d}")
+                obj_id = f"CampId:{airbase['id']}"
+                display_icao = camp_id_string
             
             # Create airbase object
             obj = ET.SubElement(root, 'Object', attrib={'ID': obj_id})
@@ -63,21 +69,22 @@ def generate_tacview_xml(airbases, converter, debug=False):
             ET.SubElement(obj, 'Type').text = 'Airport'
             
             # Add name - either with or without ICAO code
-            if airbase['icao'].startswith('AB'):
-                ET.SubElement(obj, 'Name').text = airbase['name']
-            else:
+            if has_icao:
                 # Only add ICAO if it's not already in the name
                 if airbase['icao'] in airbase['name']:
                     ET.SubElement(obj, 'Name').text = airbase['name']
                 else:
                     ET.SubElement(obj, 'Name').text = f"{airbase['name']} ({airbase['icao']})"
+            else:
+                # No ICAO code available, just use the name
+                ET.SubElement(obj, 'Name').text = airbase['name']
             
             # Add short name
             short_name = clean_shortname(airbase['name'])
-            if airbase['icao'].startswith('AB'):
-                ET.SubElement(obj, 'ShortName').text = short_name
-            else:
+            if has_icao:
                 ET.SubElement(obj, 'ShortName').text = airbase['icao']
+            else:
+                ET.SubElement(obj, 'ShortName').text = short_name
             
             # Add position in DMS format
             position = ET.SubElement(obj, 'Position')
@@ -88,7 +95,7 @@ def generate_tacview_xml(airbases, converter, debug=False):
             processed_count += 1
             
             if debug:
-                print(f"  ✓ {airbase['icao']} - {airbase['name']} at {lat:.6f}, {lon:.6f}")
+                print(f"  ✓ {display_icao} - {airbase['name']} at {lat:.6f}, {lon:.6f}")
             
             # Add runways as separate objects (like original format)
             for runway in airbase.get('runways', []):

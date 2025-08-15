@@ -212,6 +212,20 @@ def compute_runway_geometry(corner_pts):
     except Exception:
         return None
 
+def extract_icao_from_name(name):
+    """Extract ICAO code from airbase name if present."""
+    # Look for 4-letter uppercase code in parentheses
+    icao_match = re.search(r'\(([A-Z]{4})\)', name)
+    if icao_match:
+        return icao_match.group(1)
+    
+    # Look for 4-letter uppercase code at the end of the name
+    icao_match = re.search(r'\b([A-Z]{4})\b\s*$', name)
+    if icao_match:
+        return icao_match.group(1)
+    
+    return None
+
 def get_all_airbase_data(paths, icao_map):
     """Get complete airbase data including runways using original logic."""
     import math
@@ -228,8 +242,22 @@ def get_all_airbase_data(paths, icao_map):
     for airbase in airbases:
         airbase_id = airbase['id']
         
-        # Add ICAO code if available
-        airbase['icao'] = icao_map.get(airbase_id, f"AB{airbase_id:03d}")
+        # Try to find ICAO code in multiple places:
+        # 1. First check the airbase name for ICAO codes in parentheses
+        icao_from_name = extract_icao_from_name(airbase['name'])
+        
+        # 2. Then check the stations file mapping
+        icao_from_stations = icao_map.get(airbase_id)
+        
+        # 3. Use the best available ICAO code, preferring name over stations file
+        if icao_from_name:
+            airbase['icao'] = icao_from_name
+        elif icao_from_stations:
+            airbase['icao'] = icao_from_stations
+        else:
+            # No ICAO code found - use camp ID for identification
+            airbase['icao'] = None
+            airbase['camp_id_string'] = f"AB{airbase_id:03d}"
         
         # Get runway data from objective files
         airbase['runways'] = []
