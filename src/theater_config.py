@@ -100,8 +100,8 @@ class TheaterConfigManager:
         paths = {
             'campaign_data': os.path.join(base_path, 'Data', config['campaign_subdir'], 'CampObjData.XML'),
             'stations_data': os.path.join(base_path, 'Data', config['campaign_subdir'], 'Stations+Ils.dat'),
-            'falcon_ct': os.path.join(base_path, 'Data', 'TerrData', 'Objects', 'Falcon4_CT.xml'),
-            'objective_data': os.path.join(base_path, 'Data', 'TerrData', 'Objects', 'ObjectiveRelatedData'),
+            'falcon_ct': os.path.join(base_path, 'Data', config['object_subdir'], 'Falcon4_CT.xml'),
+            'objective_data': os.path.join(base_path, 'Data', config['object_subdir'], 'ObjectiveRelatedData'),
             'heightmap': os.path.join(base_path, 'Data', config['terrain_subdir'], config['heightmap_file'])
         }
         
@@ -364,9 +364,16 @@ class TheaterConfigManager:
         if 'terraindir' in config and 'terrain_subdir' not in config:
             config['terrain_subdir'] = config['terraindir']
         
+        if 'objectdir' in config and 'object_subdir' not in config:
+            config['object_subdir'] = config['objectdir']
+        
         # Ensure we have required paths for heightmap
         if 'terrain_subdir' in config and 'heightmap_file' not in config:
             config['heightmap_file'] = 'HeightMaps/HeightMap.raw'
+        
+        # Ensure we have object directory
+        if 'object_subdir' not in config:
+            config['object_subdir'] = 'TerrData/Objects'
         
         # Ensure we have a name
         if 'name' not in config:

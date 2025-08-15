@@ -18,6 +18,7 @@ STATIC_THEATER_CONFIGS = {
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Campaign',
         'terrain_subdir': 'TerrData/Korea/NewTerrain',
+        'object_subdir': 'TerrData/Objects',
         'heightmap_file': 'HeightMaps/HeightMap.raw',
         'heightmap_size': (32768, 32768),  # width, height in pixels
         'heightmap_bounds': {  # in game coordinates (feet)
@@ -34,6 +35,7 @@ STATIC_THEATER_CONFIGS = {
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Balkans/Campaign',
         'terrain_subdir': 'Add-On Balkans/TerrData/Balkans',
+        'object_subdir': 'Add-On Balkans/TerrData/objects',
         'heightmap_file': 'NewTerrain/Heightmaps/Heightmap.raw',
         'heightmap_size': (32768, 32768),
         'heightmap_bounds': {
@@ -50,6 +52,7 @@ STATIC_THEATER_CONFIGS = {
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Israel/Campaign',
         'terrain_subdir': 'Add-On Israel/TerrData/Israel',
+        'object_subdir': 'Add-On Israel/TerrData/objects',
         'heightmap_file': 'HeightMaps/HeightMap.raw',
         'heightmap_size': (1024, 1024),
         'heightmap_bounds': {
@@ -66,6 +69,7 @@ STATIC_THEATER_CONFIGS = {
         'utm_hemisphere': 'north',
         'campaign_subdir': 'Add-On Falcon/Campaign',
         'terrain_subdir': 'Add-On Falcon/TerrData/Falcon',
+        'object_subdir': 'Add-On Falcon/TerrData/objects',
         'heightmap_file': 'HeightMaps/HeightMap.raw',
         'heightmap_size': (1024, 1024),
         'heightmap_bounds': {

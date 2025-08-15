@@ -43,7 +43,7 @@ def generate_tacview_xml(airbases, converter, debug=False):
     for airbase in airbases:
         try:
             # Convert game coordinates to lat/lon
-            lat, lon = converter.game_to_latlon(airbase['x'], airbase['y'], from_feet=True)
+            lat, lon = converter.game_to_latlon_grid_karney(airbase['x'], airbase['y'], from_feet=True)
             
             # Get elevation if available
             elevation = converter.get_elevation(airbase['x'], airbase['y'], from_feet=True)
@@ -93,7 +93,7 @@ def generate_tacview_xml(airbases, converter, debug=False):
             # Add runways as separate objects (like original format)
             for runway in airbase.get('runways', []):
                 # Calculate runway position (airbase position + runway offset)
-                runway_lat, runway_lon = converter.game_to_latlon(
+                runway_lat, runway_lon = converter.game_to_latlon_grid_karney(
                     airbase['x'] + runway['x'], 
                     airbase['y'] + runway['y'], 
                     from_feet=True
